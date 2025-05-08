@@ -1,0 +1,312 @@
+
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Love's To-Do List</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@preline/preline@2.0.0/dist/preline.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .float { animation: float 3s ease-in-out infinite; }
+        .pulse { animation: pulse 2s ease-in-out infinite; }
+        .heartbeat { animation: pulse 1.5s ease-in-out infinite; }
+        .gradient-bg {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%);
+        }
+        .gradient-text {
+            background: linear-gradient(90deg, #ff6b6b, #f8a5c2, #f5cd79);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .task-card {
+            transition: all 0.3s ease;
+            background: linear-gradient(145deg, #2a2a2a, #1f1f1f);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .task-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        .checkbox:checked + .checkmark {
+            background: linear-gradient(135deg, #ff6b6b, #f8a5c2);
+        }
+        .checkbox:checked + .checkmark:after {
+            display: block;
+        }
+        .checkmark:after {
+            content: "✓";
+            color: white;
+            position: absolute;
+            display: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white font-sans">
+    <div class="container mx-auto px-4 py-8 max-w-3xl">
+        <!-- Header with cute animation -->
+        <header class="text-center mb-10">
+            <div class="float inline-block">
+                <i class="fas fa-heart text-pink-500 text-5xl heartbeat"></i>
+            </div>
+            <h1 class="gradient-text text-4xl md:text-5xl font-bold mt-4 mb-2">My Intan's To-Do List</h1>
+            <p class="text-gray-300">For the most amazing girlfriend in the world ❤️</p>
+        </header>
+
+        <!-- Add new task form -->
+        <div class="bg-black bg-opacity-30 rounded-xl p-6 mb-8 backdrop-blur-sm border border-gray-700">
+            <form id="task-form" class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-grow">
+                    <input 
+                        type="text" 
+                        id="task-input" 
+                        placeholder="What do you need to do today, love?" 
+                        class="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500 text-white placeholder-gray-400 transition-all"
+                        required
+                    >
+                </div>
+                <div class="flex-shrink-0">
+                    <button 
+                        type="submit" 
+                        class="w-full sm:w-auto px-6 py-3 rounded-lg bg-gradient-to-r from-pink-500 to-yellow-400 text-white font-medium hover:opacity-90 transition-all transform hover:scale-105"
+                    >
+                        <i class="fas fa-plus mr-2"></i> Add Task
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Task list -->
+        <div id="task-list" class="space-y-4">
+            <!-- Tasks will be added here dynamically -->
+        </div>
+
+        <!-- Empty state -->
+        <div id="empty-state" class="text-center py-12">
+            <div class="pulse inline-block mb-6">
+                <i class="fas fa-star text-yellow-400 text-5xl"></i>
+            </div>
+            <h3 class="text-xl text-gray-300 mb-2">No tasks yet, beautiful!</h3>
+            <p class="text-gray-500">Add your first task and let's get organized together</p>
+        </div>
+
+        <!-- Stats -->
+        <div class="mt-12 bg-black bg-opacity-20 rounded-xl p-6 backdrop-blur-sm border border-gray-700">
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
+                <div class="p-4 rounded-lg bg-gray-800 bg-opacity-50">
+                    <p class="text-gray-400 text-sm">Total Tasks</p>
+                    <p id="total-tasks" class="text-2xl font-bold gradient-text">0</p>
+                </div>
+                <div class="p-4 rounded-lg bg-gray-800 bg-opacity-50">
+                    <p class="text-gray-400 text-sm">Completed</p>
+                    <p id="completed-tasks" class="text-2xl font-bold gradient-text">0</p>
+                </div>
+                <div class="p-4 rounded-lg bg-gray-800 bg-opacity-50 col-span-2 md:col-span-1">
+                    <p class="text-gray-400 text-sm">Completion</p>
+                    <p id="completion-rate" class="text-2xl font-bold gradient-text">0%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample initial tasks with cute messages
+        const initialTasks = [
+            { id: Date.now(), text: "Give my love a big hug ❤️", completed: false, createdAt: new Date() },
+            { id: Date.now() + 1, text: "Send a sweet good morning message", completed: false, createdAt: new Date() },
+            { id: Date.now() + 2, text: "Plan our next date night", completed: true, createdAt: new Date() }
+        ];
+
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || initialTasks;
+
+        // DOM elements
+        const taskForm = document.getElementById('task-form');
+        const taskInput = document.getElementById('task-input');
+        const taskList = document.getElementById('task-list');
+        const emptyState = document.getElementById('empty-state');
+        const totalTasksEl = document.getElementById('total-tasks');
+        const completedTasksEl = document.getElementById('completed-tasks');
+        const completionRateEl = document.getElementById('completion-rate');
+
+        // Render tasks
+        function renderTasks() {
+            // Sort tasks: incomplete first, then by creation date
+            tasks.sort((a, b) => {
+                if (a.completed === b.completed) {
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+                }
+                return a.completed ? 1 : -1;
+            });
+
+            taskList.innerHTML = '';
+            
+            if (tasks.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                tasks.forEach(task => {
+                    const taskEl = document.createElement('div');
+                    taskEl.className = `task-card rounded-xl p-5 flex items-start border border-gray-700 ${task.completed ? 'opacity-70' : ''}`;
+                    taskEl.innerHTML = `
+                        <label class="flex items-start space-x-3 cursor-pointer w-full">
+                            <div class="relative mt-1">
+                                <input 
+                                    type="checkbox" 
+                                    class="checkbox opacity-0 absolute h-5 w-5 cursor-pointer" 
+                                    ${task.completed ? 'checked' : ''}
+                                    data-id="${task.id}"
+                                >
+                                <span class="checkmark h-5 w-5 rounded border-2 border-pink-400 flex items-center justify-center"></span>
+                            </div>
+                            <div class="flex-1">
+                                <p class="${task.completed ? 'line-through text-gray-400' : 'text-white'}">${task.text}</p>
+                                <p class="text-xs text-gray-500 mt-1">Added on ${new Date(task.createdAt).toLocaleDateString()}</p>
+                            </div>
+                            <button 
+                                class="delete-btn text-gray-400 hover:text-pink-500 transition-colors p-1"
+                                data-id="${task.id}"
+                            >
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </label>
+                    `;
+                    taskList.appendChild(taskEl);
+                });
+            }
+
+            updateStats();
+        }
+
+        // Update statistics
+        function updateStats() {
+            const total = tasks.length;
+            const completed = tasks.filter(task => task.completed).length;
+            const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            totalTasksEl.textContent = total;
+            completedTasksEl.textContent = completed;
+            completionRateEl.textContent = `${rate}%`;
+        }
+
+        // Add new task
+        taskForm.addEventListener('submit', e => {
+            e.preventDefault();
+            
+            if (taskInput.value.trim() === '') return;
+
+            const newTask = {
+                id: Date.now(),
+                text: taskInput.value.trim(),
+                completed: false,
+                createdAt: new Date()
+            };
+
+            tasks.unshift(newTask);
+            saveTasks();
+            renderTasks();
+            
+            taskInput.value = '';
+            
+            // Add confetti effect
+            const confetti = document.createElement('div');
+            confetti.className = 'fixed inset-0 flex items-center justify-center pointer-events-none';
+            confetti.innerHTML = `
+                <div class="absolute animate-ping text-pink-500 text-4xl">❤️</div>
+                <div class="absolute animate-ping text-yellow-400 text-4xl delay-100">✨</div>
+                <div class="absolute animate-ping text-pink-500 text-4xl delay-200">🥰</div>
+            `;
+            document.body.appendChild(confetti);
+            
+            setTimeout(() => {
+                confetti.remove();
+            }, 1000);
+        });
+
+        // Toggle task completion
+        taskList.addEventListener('change', e => {
+            if (e.target.classList.contains('checkbox')) {
+                const taskId = parseInt(e.target.dataset.id);
+                const task = tasks.find(task => task.id === taskId);
+                
+                if (task) {
+                    task.completed = e.target.checked;
+                    task.completedAt = new Date();
+                    saveTasks();
+                    renderTasks();
+                    
+                    // Add celebration effect for completed tasks
+                    if (task.completed) {
+                        const taskEl = e.target.closest('.task-card');
+                        taskEl.classList.add('animate-bounce');
+                        
+                        setTimeout(() => {
+                            taskEl.classList.remove('animate-bounce');
+                        }, 1000);
+                    }
+                }
+            }
+        });
+
+        // Delete task
+        taskList.addEventListener('click', e => {
+            if (e.target.closest('.delete-btn')) {
+                e.preventDefault();
+                const taskId = parseInt(e.target.closest('.delete-btn').dataset.id);
+                tasks = tasks.filter(task => task.id !== taskId);
+                saveTasks();
+                renderTasks();
+                
+                // Add floating heart animation
+                const heart = document.createElement('div');
+                heart.className = 'absolute text-pink-500 text-xl animate-float';
+                heart.innerHTML = '❤️';
+                heart.style.left = `${e.clientX}px`;
+                heart.style.top = `${e.clientY}px`;
+                document.body.appendChild(heart);
+                
+                setTimeout(() => {
+                    heart.remove();
+                }, 2000);
+            }
+        });
+
+        // Save tasks to localStorage
+        function saveTasks() {
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+        }
+
+        // Initial render
+        renderTasks();
+
+        // Add floating hearts in the background
+        function createFloatingHearts() {
+            const container = document.querySelector('body');
+            const heartCount = 8;
+            
+            for (let i = 0; i < heartCount; i++) {
+                const heart = document.createElement('div');
+                heart.className = 'absolute text-pink-400 opacity-20 text-2xl float';
+                heart.innerHTML = '❤️';
+                heart.style.left = `${Math.random() * 100}vw`;
+                heart.style.top = `${Math.random() * 100}vh`;
+                heart.style.animationDuration = `${3 + Math.random() * 4}s`;
+                heart.style.animationDelay = `${Math.random() * 5}s`;
+                container.appendChild(heart);
+            }
+        }
+
+        createFloatingHearts();
+    </script>
+</body>
+</html>
